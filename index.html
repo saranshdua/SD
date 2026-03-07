@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fabulous Habits Visualizer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, sans-serif;
+    background: #F5F5F5;
+    color: #333;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* --- Header --- */
+  .header {
+    background: linear-gradient(135deg, #1ABC9C 0%, #0EBD8F 50%, #16A085 100%);
+    color: white;
+    padding: 48px 32px 36px;
+    text-align: center;
+  }
+  .header h1 { font-size: 36px; font-weight: 700; margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; opacity: 0.9; margin-bottom: 20px; }
+  .header .stats {
+    display: flex; gap: 32px; justify-content: center; flex-wrap: wrap;
+  }
+  .header .stat {
+    background: rgba(255,255,255,0.15); border-radius: 12px; padding: 12px 24px;
+  }
+  .header .stat-num { font-size: 28px; font-weight: 700; }
+  .header .stat-label { font-size: 13px; opacity: 0.85; }
+
+  /* --- Filters --- */
+  .filters {
+    background: white; padding: 16px 32px; display: flex; gap: 12px;
+    align-items: center; flex-wrap: wrap; border-bottom: 1px solid #E0E0E0;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .filters label { font-size: 14px; font-weight: 600; color: #666; }
+  .filter-group { display: flex; gap: 8px; align-items: center; }
+  .filter-btn {
+    border: 1.5px solid #DDD; background: white; border-radius: 20px;
+    padding: 6px 16px; font-size: 13px; cursor: pointer; transition: all 0.2s;
+    color: #555; font-weight: 500;
+  }
+  .filter-btn:hover { border-color: #1ABC9C; color: #1ABC9C; }
+  .filter-btn.active {
+    background: #1ABC9C; border-color: #1ABC9C; color: white;
+  }
+  .filter-select {
+    border: 1.5px solid #DDD; border-radius: 20px; padding: 6px 16px;
+    font-size: 13px; background: white; color: #555; cursor: pointer;
+    font-weight: 500; appearance: auto;
+  }
+  .filter-divider { width: 1px; height: 28px; background: #DDD; margin: 0 8px; }
+
+  /* --- Main Grid --- */
+  .main { padding: 32px; max-width: 1200px; margin: 0 auto; transition: margin-right 0.35s ease; }
+  .main.panel-open { margin-right: 440px; }
+
+  .category-section { margin-bottom: 36px; }
+  .category-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+  }
+  .category-icon {
+    width: 40px; height: 40px; border-radius: 12px; display: flex;
+    align-items: center; justify-content: center; font-size: 20px;
+  }
+  .category-name { font-size: 20px; font-weight: 700; color: #333; }
+  .category-count {
+    font-size: 13px; color: #999; background: #F0F0F0; border-radius: 12px;
+    padding: 2px 10px; font-weight: 500;
+  }
+
+  .habit-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .habit-card {
+    background: white; border-radius: 14px; padding: 16px; cursor: pointer;
+    border: 2px solid transparent; transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .habit-card:hover {
+    border-color: #1ABC9C; box-shadow: 0 4px 12px rgba(26,188,156,0.15);
+    transform: translateY(-2px);
+  }
+  .habit-card.active { border-color: #1ABC9C; background: #F0FBF8; }
+  .habit-card .habit-emoji { font-size: 28px; margin-bottom: 8px; }
+  .habit-card .habit-name { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 6px; }
+  .habit-card .habit-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .habit-tag {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500;
+  }
+  .tag-morning { background: #FFF3E0; color: #E65100; }
+  .tag-afternoon { background: #E8F5E9; color: #2E7D32; }
+  .tag-evening { background: #E8EAF6; color: #283593; }
+  .tag-keystone { background: #FCE4EC; color: #C62828; }
+
+  /* --- Detail Panel --- */
+  .panel-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+    z-index: 50; opacity: 0; transition: opacity 0.3s;
+  }
+  .panel-overlay.visible { display: block; opacity: 1; }
+
+  .detail-panel {
+    position: fixed; top: 0; right: -440px; width: 420px; height: 100vh;
+    background: white; z-index: 100; overflow-y: auto;
+    transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -4px 0 24px rgba(0,0,0,0.1);
+  }
+  .detail-panel.open { right: 0; }
+
+  .panel-close {
+    position: absolute; top: 16px; right: 16px; width: 36px; height: 36px;
+    border: none; background: #F0F0F0; border-radius: 50%; cursor: pointer;
+    font-size: 18px; display: flex; align-items: center; justify-content: center;
+    color: #666; transition: background 0.2s; z-index: 5;
+  }
+  .panel-close:hover { background: #E0E0E0; }
+
+  .panel-hero {
+    padding: 32px 28px 24px; background: linear-gradient(135deg, #1ABC9C, #0EBD8F);
+    color: white;
+  }
+  .panel-hero .panel-emoji { font-size: 48px; margin-bottom: 12px; }
+  .panel-hero h2 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .panel-hero .panel-category { font-size: 14px; opacity: 0.85; }
+
+  .panel-summary {
+    padding: 20px 28px; background: #F8F9FA; border-bottom: 1px solid #E8E8E8;
+    font-size: 15px; color: #444; line-height: 1.6;
+  }
+
+  .panel-section { padding: 20px 28px; border-bottom: 1px solid #F0F0F0; }
+  .panel-section-title {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.8px; color: #999; margin-bottom: 12px;
+  }
+
+  .panel-pill-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .panel-pill {
+    font-size: 12px; padding: 4px 12px; border-radius: 12px;
+    background: #F0F0F0; color: #555; font-weight: 500;
+  }
+  .panel-pill.teal { background: #E0F7F1; color: #0D9B7A; }
+  .panel-pill.coral { background: #FDECEA; color: #C0392B; }
+  .panel-pill.purple { background: #EDE7F6; color: #5E35B1; }
+  .panel-pill.amber { background: #FFF8E1; color: #F57F17; }
+
+  .panel-info-row {
+    display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px;
+    font-size: 14px; color: #444;
+  }
+  .panel-info-icon { width: 20px; text-align: center; flex-shrink: 0; }
+  .panel-info-text { flex: 1; }
+  .panel-info-label { font-weight: 600; color: #333; }
+
+  .panel-related {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .panel-related-chip {
+    font-size: 12px; padding: 4px 12px; border-radius: 10px;
+    background: #F5F5F5; color: #666; cursor: pointer; border: 1px solid #E8E8E8;
+    transition: all 0.2s;
+  }
+  .panel-related-chip:hover { border-color: #1ABC9C; color: #1ABC9C; }
+
+  /* --- Empty State --- */
+  .empty-state {
+    text-align: center; padding: 80px 32px; color: #999;
+  }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state p { font-size: 16px; }
+
+  /* --- Responsive --- */
+  @media (max-width: 768px) {
+    .header { padding: 32px 20px 24px; }
+    .header h1 { font-size: 28px; }
+    .main { padding: 20px; }
+    .main.panel-open { margin-right: 0; }
+    .detail-panel { width: 100%; right: -100%; }
+    .filters { padding: 12px 16px; }
+    .habit-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Fabulous Habits</h1>
+  <p class="subtitle">The complete habit library from the Fabulous app ecosystem</p>
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="total-count">0</div><div class="stat-label">Total Habits</div></div>
+    <div class="stat"><div class="stat-num" id="category-count">0</div><div class="stat-label">Categories</div></div>
+    <div class="stat"><div class="stat-num" id="journey-count">25+</div><div class="stat-label">Journeys</div></div>
+    <div class="stat"><div class="stat-num" id="routine-count">3</div><div class="stat-label">Routines</div></div>
+  </div>
+</div>
+
+<div class="filters">
+  <div class="filter-group">
+    <label>Time of Day:</label>
+    <button class="filter-btn active" data-time="all">All</button>
+    <button class="filter-btn" data-time="morning">Morning</button>
+    <button class="filter-btn" data-time="afternoon">Afternoon</button>
+    <button class="filter-btn" data-time="evening">Evening</button>
+  </div>
+  <div class="filter-divider"></div>
+  <div class="filter-group">
+    <label>Category:</label>
+    <select class="filter-select" id="category-filter">
+      <option value="all">All Categories</option>
+    </select>
+  </div>
+</div>
+
+<div class="main" id="main">
+  <div id="habit-grid"></div>
+  <div class="empty-state" id="empty-state" style="display:none;">
+    <div class="empty-icon">&#x1F50D;</div>
+    <p>No habits match your current filters.</p>
+  </div>
+</div>
+
+<div class="panel-overlay" id="panel-overlay"></div>
+<div class="detail-panel" id="detail-panel">
+  <button class="panel-close" id="panel-close">&times;</button>
+  <div id="panel-content"></div>
+</div>
+
+<script>
+const HABITS = [
+  // === FOUNDATIONAL ===
+  {
+    name: "Drink Water",
+    emoji: "\u{1F4A7}",
+    category: "Foundational",
+    timeOfDay: ["morning"],
+    keystone: true,
+    summary: "The very first habit every Fabulous user starts with. Drinking a glass of water upon waking is the keystone habit that anchors the entire morning routine and triggers a cascade of positive behaviors.",
+    routines: ["Morning Routine"],
+    journeys: ["An Unexpected Journey", "A Fabulous Morning"],
+    challenges: [],
+    stackingPosition: "Position 1 — The anchor. Always first in the morning routine chain.",
+    behavioralScience: "Based on the Keystone Habit concept from Charles Duhigg's research. Starting with a trivially easy habit (30 seconds) applies BJ Fogg's Tiny Habits principle: maximize Ability so Motivation doesn't need to be high. It also serves as the Cue in the Habit Loop for the next stacked habit.",
+    relatedHabits: ["Eat a Great Breakfast", "Exercise"],
+    makeMeFabulous: null,
+    details: "Introduced on Day 1. Takes ~30 seconds. Tip from the app: 'Use a glass or a bottle you love.' The habit detail screen shows full-screen immersive blue underwater art with a 55-second timer."
+  },
+  {
+    name: "Eat a Great Breakfast",
+    emoji: "\u{1F373}",
+    category: "Foundational",
+    timeOfDay: ["morning"],
+    keystone: true,
+    summary: "The second keystone habit, piggybacked on the hydration cue. Eating a nutritious breakfast builds on the momentum created by drinking water and provides the energy foundation for the day.",
+    routines: ["Morning Routine"],
+    journeys: ["An Unexpected Journey", "A Fabulous Morning", "Healthy Eating"],
+    challenges: ["30-Day Clean Eating Challenge"],
+    stackingPosition: "Position 2 — Triggered by completing Drink Water (habit stacking). Introduced Day 4-7.",
+    behavioralScience: "Applies Habit Stacking (James Clear's Atomic Habits). The previous habit (Drink Water) acts as the Cue for this Routine. The Reward is the natural satisfaction of eating plus the app's celebration animation.",
+    relatedHabits: ["Drink Water", "Exercise", "Take My Vitamins/Medication"],
+    makeMeFabulous: null,
+    details: "Introduced around Day 4-7 of 'An Unexpected Journey.' Only unlocked after consistent water-drinking. The app provides coaching letters about the science of breakfast and energy."
+  },
+  {
+    name: "Exercise",
+    emoji: "\u{1F3CB}\u{FE0F}",
+    category: "Foundational",
+    timeOfDay: ["morning"],
+    keystone: true,
+    summary: "The third keystone habit, adding a physical movement component to the morning ritual. Starts with just 5-10 minutes to keep the barrier low.",
+    routines: ["Morning Routine"],
+    journeys: ["An Unexpected Journey", "Exercising Regularly", "Weight Loss Journey"],
+    challenges: ["7-Day Health Challenge", "7-Day 7-Minute Exercise Challenge"],
+    stackingPosition: "Position 3 — Follows Eat Breakfast. Introduced Day 8-11.",
+    behavioralScience: "Progressive Disclosure: the app waits until water and breakfast are established before introducing exercise. Starts at just 5-10 minutes (Tiny Habits). Physical activity triggers endorphin release, creating a natural Reward in the habit loop.",
+    relatedHabits: ["Eat a Great Breakfast", "Stretch", "Go for a Walk"],
+    makeMeFabulous: "A 7-Minute Workout (7 min)",
+    details: "Introduced Day 8-11. The app offers various exercise types: 7-min workouts, yoga, stretching, 5-min abs. Duration deliberately kept short at first."
+  },
+  // === HEALTH ===
+  {
+    name: "Take My Vitamins/Medication",
+    emoji: "\u{1F48A}",
+    category: "Health",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "A health maintenance habit tied to the morning routine. Taking vitamins or medication at a consistent time improves adherence and builds on the existing morning chain.",
+    routines: ["Morning Routine"],
+    journeys: ["A Fabulous Morning"],
+    challenges: [],
+    stackingPosition: "Flexible — typically placed after breakfast in the morning chain.",
+    behavioralScience: "Implementation Intentions: linking medication to an existing routine cue (breakfast) dramatically improves compliance. The consistent time creates automatic behavior through repetition.",
+    relatedHabits: ["Eat a Great Breakfast", "Drink Water"],
+    makeMeFabulous: null,
+    details: "Can be added to any routine. Especially useful for users who need to take daily medication or supplements with food."
+  },
+  // === ORGANIZATION ===
+  {
+    name: "Make My Bed",
+    emoji: "\u{1F6CF}\u{FE0F}",
+    category: "Organization",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "A quick organizational habit that creates a sense of order and accomplishment first thing in the morning. Often cited as a keystone habit in its own right.",
+    routines: ["Morning Routine"],
+    journeys: ["A Fabulous Morning"],
+    challenges: ["30-Day Declutter Challenge"],
+    stackingPosition: "Early morning — often right after waking and before Drink Water.",
+    behavioralScience: "Keystone Habit principle: completing one small organizational task creates a ripple effect of orderliness throughout the day. The visual reward of a made bed provides immediate environmental feedback.",
+    relatedHabits: ["Tidy Up", "Tidy My Workspace"],
+    makeMeFabulous: null,
+    details: "Takes under 2 minutes. Admiral William McRaven famously advocated this habit: 'If you make your bed every morning, you will have accomplished the first task of the day.'"
+  },
+  {
+    name: "Tidy Up",
+    emoji: "\u{1F9F9}",
+    category: "Organization",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "A brief tidying session to create an organized environment. A clean space reduces cognitive load and supports focus throughout the day.",
+    routines: ["Morning Routine"],
+    journeys: ["A Fabulous Morning"],
+    challenges: ["30-Day Declutter Challenge"],
+    stackingPosition: "Flexible morning position.",
+    behavioralScience: "Environmental design: a tidy space reduces decision fatigue and provides visual cues for productive behavior. Small organizational wins build momentum (Endowed Progress Effect).",
+    relatedHabits: ["Make My Bed", "Tidy My Workspace", "Tidy Up for 15 Minutes"],
+    makeMeFabulous: null,
+    details: "Keep it short — 5-10 minutes. Focus on high-impact areas like kitchen counter or desk."
+  },
+  {
+    name: "Tidy My Workspace",
+    emoji: "\u{1F5C2}\u{FE0F}",
+    category: "Organization",
+    timeOfDay: ["afternoon"],
+    keystone: false,
+    summary: "A midday reset that clears your workspace for better focus in the afternoon. Reduces visual clutter that competes for attention.",
+    routines: ["Afternoon Routine"],
+    journeys: ["Incredible Focus", "Higher Productivity"],
+    challenges: ["30-Day Declutter Challenge"],
+    stackingPosition: "Midday — typically after a break or lunch.",
+    behavioralScience: "Environmental design for focus. Clearing visual distractions supports the Deep Work framework. Acts as a transition ritual between morning and afternoon work modes.",
+    relatedHabits: ["Tidy Up", "Make My Bed", "Plan the Rest of My Day"],
+    makeMeFabulous: null,
+    details: "Quick 2-5 minute activity. Clear desk, close unnecessary tabs, organize immediate priorities."
+  },
+  {
+    name: "Tidy Up for 15 Minutes",
+    emoji: "\u{1F3E0}",
+    category: "Organization",
+    timeOfDay: ["evening"],
+    keystone: false,
+    summary: "An evening tidying session that prepares the home environment for the next day. A clean space in the evening supports a calm wind-down and easier mornings.",
+    routines: ["Evening Routine"],
+    journeys: ["A Fabulous Night"],
+    challenges: ["30-Day Declutter Challenge"],
+    stackingPosition: "Early evening — before the wind-down activities begin.",
+    behavioralScience: "Time-boxed tasks (15 minutes) prevent perfectionism and overwhelm. The clean environment acts as an environmental cue for relaxation and sleep preparation.",
+    relatedHabits: ["Tidy Up", "Prepare for Tomorrow"],
+    makeMeFabulous: null,
+    details: "Fixed at 15 minutes to keep it manageable. Focus on shared spaces and tomorrow's essentials."
+  },
+  {
+    name: "Charge My Devices",
+    emoji: "\u{1F50C}",
+    category: "Organization",
+    timeOfDay: ["evening"],
+    keystone: false,
+    summary: "A practical evening habit that ensures devices are ready for the next day while also creating a physical separation from screens before sleep.",
+    routines: ["Evening Routine"],
+    journeys: ["A Fabulous Night", "Better Sleep"],
+    challenges: [],
+    stackingPosition: "Evening — pairs naturally with Disconnect from Technology.",
+    behavioralScience: "Implementation Intention: placing devices on a charger in another room removes the Cue for late-night screen use. Doubles as a practical task and a digital wellness mechanism.",
+    relatedHabits: ["Disconnect from Technology", "Set My Alarm"],
+    makeMeFabulous: null,
+    details: "Best practice: charge devices outside the bedroom to eliminate the temptation of nighttime scrolling."
+  },
+  {
+    name: "Empty the Dishwasher",
+    emoji: "\u{1F37D}\u{FE0F}",
+    category: "Organization",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "A quick household task that maintains kitchen order and creates a clean starting point for the day's meals.",
+    routines: ["Morning Routine"],
+    journeys: [],
+    challenges: ["30-Day Declutter Challenge"],
+    stackingPosition: "Flexible morning — pairs with breakfast preparation.",
+    behavioralScience: "Small completion tasks build momentum through the Endowed Progress Effect. Maintaining an organized kitchen supports the Healthy Eating habit ecosystem.",
+    relatedHabits: ["Tidy Up", "Prepare a Healthy Lunch"],
+    makeMeFabulous: null,
+    details: "Quick 5-minute task. Easily pairs with waiting for the kettle to boil or breakfast to cook."
+  },
+  {
+    name: "Do a Load of Laundry",
+    emoji: "\u{1F9FA}",
+    category: "Organization",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "Starting a load of laundry in the morning means it's done by afternoon. A maintenance habit that prevents weekend overwhelm.",
+    routines: ["Morning Routine"],
+    journeys: [],
+    challenges: ["30-Day Declutter Challenge"],
+    stackingPosition: "Flexible morning — low-effort, set-and-forget task.",
+    behavioralScience: "Reducing future friction: handling chores in small daily increments prevents the buildup that leads to decision fatigue and overwhelm on weekends.",
+    relatedHabits: ["Tidy Up", "Prepare My Outfit for Tomorrow"],
+    makeMeFabulous: null,
+    details: "Takes just 2 minutes to start. The 'set and forget' nature makes it easy to stack with other morning habits."
+  },
+  // === NUTRITION ===
+  {
+    name: "Prepare a Healthy Lunch",
+    emoji: "\u{1F96A}",
+    category: "Nutrition",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "Preparing lunch in the morning removes the midday decision of what to eat, reducing the likelihood of unhealthy convenience choices.",
+    routines: ["Morning Routine"],
+    journeys: ["Healthy Eating", "Weight Loss Journey"],
+    challenges: ["30-Day Clean Eating Challenge"],
+    stackingPosition: "After breakfast — when you're already in the kitchen.",
+    behavioralScience: "Implementation Intentions: pre-deciding what to eat eliminates the decision fatigue that leads to poor choices. Also applies Environmental Design by having healthy food readily available.",
+    relatedHabits: ["Eat a Great Breakfast", "Eat a Healthy Snack"],
+    makeMeFabulous: null,
+    details: "Can be meal prep or simple assembly. The key is making the decision in the morning when willpower is highest."
+  },
+  {
+    name: "Eat a Healthy Snack",
+    emoji: "\u{1F34E}",
+    category: "Nutrition",
+    timeOfDay: ["afternoon"],
+    keystone: false,
+    summary: "A planned healthy snack in the afternoon maintains energy levels and prevents the blood sugar crash that leads to poor food choices later.",
+    routines: ["Afternoon Routine"],
+    journeys: ["Healthy Eating", "Weight Loss Journey"],
+    challenges: ["30-Day Clean Eating Challenge", "14-Day Quit the Sugar Addiction Challenge"],
+    stackingPosition: "Mid-afternoon — between lunch and dinner, around 3-4 PM.",
+    behavioralScience: "Pre-commitment: planning snacks in advance removes the in-the-moment decision. Maintains stable blood sugar, which supports self-regulation and willpower for the rest of the day.",
+    relatedHabits: ["Prepare a Healthy Lunch", "Eat a Great Breakfast", "Drink Tea"],
+    makeMeFabulous: null,
+    details: "Keep it simple: fruit, nuts, yogurt. Having healthy snacks pre-prepared removes the decision point entirely."
+  },
+  // === WELLNESS ===
+  {
+    name: "Get Some Sun",
+    emoji: "\u{2600}\u{FE0F}",
+    category: "Wellness",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "Morning sunlight exposure regulates the circadian rhythm, boosts mood, and increases vitamin D production. Even 10-15 minutes makes a significant difference.",
+    routines: ["Morning Routine"],
+    journeys: ["A Fabulous Morning", "Better Sleep"],
+    challenges: [],
+    stackingPosition: "Early morning — ideally within the first hour of waking.",
+    behavioralScience: "Circadian science: morning light exposure is the strongest signal to reset the body clock. Andrew Huberman's research shows it improves sleep quality 14-16 hours later. Acts as a natural energy booster (replacing caffeine dependency).",
+    relatedHabits: ["Exercise", "Go for a Walk"],
+    makeMeFabulous: "A Mindful Walk (15 min)",
+    details: "Aim for 10-15 minutes of direct sunlight (not through a window). Combine with a morning walk for maximum benefit."
+  },
+  {
+    name: "Drink Tea",
+    emoji: "\u{1F375}",
+    category: "Wellness",
+    timeOfDay: ["afternoon"],
+    keystone: false,
+    summary: "An afternoon tea ritual serves as a mindful pause in the day. The ritual of preparation creates a natural break from work and the warmth promotes relaxation.",
+    routines: ["Afternoon Routine"],
+    journeys: ["Mindful Living", "A Life Well-Balanced"],
+    challenges: [],
+    stackingPosition: "Mid-afternoon — pairs naturally with Take a Mindful Break.",
+    behavioralScience: "Ritual behavior: the preparation process creates a transition cue between work modes. L-theanine in tea promotes calm alertness without the jitters of coffee. The consistent ritual builds automatic behavior.",
+    relatedHabits: ["Take a Mindful Break", "Drink a Relaxing Tea", "Drink Water"],
+    makeMeFabulous: null,
+    details: "Green tea, herbal tea, or any preferred variety. The ritual matters more than the specific tea."
+  },
+  {
+    name: "Listen to Music",
+    emoji: "\u{1F3B5}",
+    category: "Wellness",
+    timeOfDay: ["afternoon"],
+    keystone: false,
+    summary: "A short music listening session in the afternoon can reset mood, reduce stress, and boost creative thinking. Acts as an emotional regulation tool.",
+    routines: ["Afternoon Routine"],
+    journeys: ["A Life Well-Balanced"],
+    challenges: [],
+    stackingPosition: "Flexible afternoon — works as a break activity.",
+    behavioralScience: "Music activates the brain's reward system (dopamine release). Listening to familiar, enjoyable music reduces cortisol. Can serve as an energy reset or transition cue between tasks.",
+    relatedHabits: ["Take a Mindful Break", "Power Nap"],
+    makeMeFabulous: null,
+    details: "Even 5-10 minutes of intentional listening (not background music) can shift mood and energy."
+  },
+  {
+    name: "Power Nap",
+    emoji: "\u{1F4A4}",
+    category: "Wellness",
+    timeOfDay: ["afternoon"],
+    keystone: false,
+    summary: "A short 10-20 minute nap in the early afternoon restores alertness, enhances performance, and reduces mistakes. NASA research shows a 26-minute nap improves performance by 34%.",
+    routines: ["Afternoon Routine"],
+    journeys: ["Better Sleep", "Higher Productivity"],
+    challenges: [],
+    stackingPosition: "Early afternoon — ideally between 1-3 PM, aligned with the natural circadian dip.",
+    behavioralScience: "Chronobiology: the post-lunch dip in alertness is a natural circadian phenomenon. A short nap works with (not against) the body's natural rhythm. Keeps it under 20 minutes to avoid sleep inertia.",
+    relatedHabits: ["Get Some Sun", "Disconnect from Technology"],
+    makeMeFabulous: "A Power Nap (20 min)",
+    details: "Set a timer for 20 minutes. The app's 'Make Me Fabulous' feature includes a guided power nap activity."
+  },
+  {
+    name: "Disconnect from Technology",
+    emoji: "\u{1F4F5}",
+    category: "Wellness",
+    timeOfDay: ["evening"],
+    keystone: false,
+    summary: "Turning off screens 30-60 minutes before bed reduces blue light exposure and mental stimulation, both of which interfere with sleep onset and quality.",
+    routines: ["Evening Routine"],
+    journeys: ["A Fabulous Night", "Better Sleep", "Life Well Balanced"],
+    challenges: ["30-Day Life Well-Balanced Challenge"],
+    stackingPosition: "Early evening — the transition point into the wind-down routine.",
+    behavioralScience: "Environmental Design: removing the device removes the Cue for scrolling. Blue light suppresses melatonin production by up to 50%. Creating a tech-free zone leverages Commitment Devices (the decision is made once, not every night).",
+    relatedHabits: ["Charge My Devices", "Read a Book", "Take a Warm Bath or Shower"],
+    makeMeFabulous: null,
+    details: "The app's Deep Work Room / App Block feature can help enforce this digitally. Combine with charging devices in another room."
+  },
+  {
+    name: "Take a Warm Bath or Shower",
+    emoji: "\u{1F6BF}",
+    category: "Wellness",
+    timeOfDay: ["evening"],
+    keystone: false,
+    summary: "A warm bath or shower 1-2 hours before bed triggers a drop in core body temperature afterward, which is a natural signal for sleep onset.",
+    routines: ["Evening Routine"],
+    journeys: ["A Fabulous Night", "Better Sleep"],
+    challenges: [],
+    stackingPosition: "Mid-evening — after disconnecting from technology, before reading/meditation.",
+    behavioralScience: "Thermoregulation science: the post-bath cooling effect mimics the natural temperature drop that signals the body to sleep. Research shows it can reduce sleep onset time by 10+ minutes. Also serves as a transition ritual separating 'awake time' from 'sleep time.'",
+    relatedHabits: ["Disconnect from Technology", "Meditate", "Read a Book"],
+    makeMeFabulous: null,
+    details: "Water temperature of around 104-108F (40-42C) is optimal. Even a warm shower works if a bath isn't possible."
+  },
+  {
+    name: "Drink a Relaxing Tea",
+    emoji: "\u{1F33F}",
+    category: "Wellness",
+    timeOfDay: ["evening"],
+    keystone: false,
+    summary: "An evening herbal tea (chamomile, valerian, lavender) promotes relaxation and serves as a consistent ritual that signals the body it's time to wind down.",
+    routines: ["Evening Routine"],
+    journeys: ["A Fabulous Night", "Better Sleep"],
+    challenges: [],
+    stackingPosition: "Evening wind-down — pairs with reading or reflection.",
+    behavioralScience: "Ritual behavior: the preparation and consumption create a consistent pre-sleep cue. Chamomile contains apigenin, which binds to GABA receptors and promotes calm. The warmth and ritual are as important as the chemical effects.",
+    relatedHabits: ["Drink Tea", "Read a Book", "Disconnect from Technology"],
+    makeMeFabulous: null,
+    details: "Caffeine-free herbal teas only. The ritual of preparation is part of the habit — slow, deliberate, mindful."
+  },
+  // === PERSONAL GROWTH ===
+  {
+    name: "Read",
+    emoji: "\u{1F4D6}",
+    category: "Personal Growth",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "Morning reading builds knowledge and sets a reflective, growth-oriented tone for the day. Even 10-15 minutes of focused reading compounds significantly over time.",
+    routines: ["Morning Routine"],
+    journeys: ["A Fabulous Morning", "My Unexpected Journey"],
+    challenges: [],
+    stackingPosition: "Later morning — after core keystone habits are established.",
+    behavioralScience: "Identity-Based Habits: 'I am someone who reads every day' creates a self-reinforcing identity loop. Compound effect: 15 minutes/day = ~20 books/year. Morning reading leverages peak cognitive resources.",
+    relatedHabits: ["Read a Book", "Journal", "Creative Time"],
+    makeMeFabulous: null,
+    details: "Keep a book by your morning spot. Physical books reduce the temptation to check notifications."
+  },
+  {
+    name: "Read a Book",
+    emoji: "\u{1F4DA}",
+    category: "Personal Growth",
+    timeOfDay: ["evening"],
+    keystone: false,
+    summary: "Evening reading replaces screen time and serves as a natural wind-down activity. Reading fiction before bed can reduce stress by up to 68% (University of Sussex study).",
+    routines: ["Evening Routine"],
+    journeys: ["A Fabulous Night", "Better Sleep"],
+    challenges: [],
+    stackingPosition: "Late evening — after disconnecting from technology, before sleep.",
+    behavioralScience: "Habit Substitution: replaces the screen-scrolling habit with a healthier alternative that uses the same Cue (lying in bed / relaxing). Reading fiction activates narrative transportation, which reduces stress and promotes sleep readiness.",
+    relatedHabits: ["Read", "Disconnect from Technology", "Reflect on My Day"],
+    makeMeFabulous: null,
+    details: "Part of 'A Fabulous Night' journey. Physical books preferred. The habit detail screen shows this is introduced early in the evening routine journey."
+  },
+  {
+    name: "Creative Time",
+    emoji: "\u{1F3A8}",
+    category: "Personal Growth",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "Dedicated creative time in the morning leverages peak cognitive energy for generative thinking. Whether writing, drawing, or building — creativity thrives with consistency.",
+    routines: ["Morning Routine"],
+    journeys: ["My Unexpected Journey"],
+    challenges: [],
+    stackingPosition: "Flexible morning — after core habits, during peak cognitive hours.",
+    behavioralScience: "Circadian alignment: creative and analytical thinking peak in the morning for most chronotypes. Scheduling creative work as a habit removes the 'when should I do this?' decision. Consistent creative practice builds the identity of 'I am a creative person.'",
+    relatedHabits: ["Read", "Journal", "Practice an Instrument"],
+    makeMeFabulous: "A Creative Escape (15 min)",
+    details: "The 'Make Me Fabulous' section offers a 15-minute 'Creative Escape' guided activity."
+  },
+  {
+    name: "Practice an Instrument",
+    emoji: "\u{1F3B9}",
+    category: "Personal Growth",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "Daily instrument practice builds musical skill through consistent repetition. Even 15-20 minutes daily is more effective than sporadic longer sessions.",
+    routines: ["Morning Routine"],
+    journeys: [],
+    challenges: [],
+    stackingPosition: "Flexible morning — after core habits.",
+    behavioralScience: "Deliberate Practice: short, consistent sessions with focused attention produce faster skill acquisition than marathon sessions. The habit loop (same time, same place) removes decision friction.",
+    relatedHabits: ["Creative Time", "Learn a Language"],
+    makeMeFabulous: null,
+    details: "15-20 minutes recommended. Consistency matters more than duration for skill development."
+  },
+  {
+    name: "Learn a Language",
+    emoji: "\u{1F30D}",
+    category: "Personal Growth",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "Daily language practice leverages the morning's fresh cognitive capacity. Spaced repetition through daily habit produces better retention than weekly cram sessions.",
+    routines: ["Morning Routine"],
+    journeys: [],
+    challenges: [],
+    stackingPosition: "Flexible morning — after core habits.",
+    behavioralScience: "Spaced Repetition: daily exposure is the most effective strategy for language acquisition. Habit stacking with an existing morning routine removes the friction of 'finding time to study.'",
+    relatedHabits: ["Read", "Creative Time", "Practice an Instrument"],
+    makeMeFabulous: null,
+    details: "10-15 minutes daily. Pairs well with apps like Duolingo or Anki for vocabulary."
+  },
+  {
+    name: "Listen to a Podcast",
+    emoji: "\u{1F3A7}",
+    category: "Personal Growth",
+    timeOfDay: ["evening"],
+    keystone: false,
+    summary: "An evening podcast can be educational and relaxing — a screen-free alternative to TV that keeps the mind engaged without blue light exposure.",
+    routines: ["Evening Routine"],
+    journeys: [],
+    challenges: [],
+    stackingPosition: "Evening — alternative to Read a Book, pairs with evening routine tasks.",
+    behavioralScience: "Habit Substitution: replaces passive screen consumption with active audio learning. Screen-free nature supports the evening wind-down. Can be combined with other evening tasks (tidying, stretching).",
+    relatedHabits: ["Read a Book", "Disconnect from Technology", "Listen to Music"],
+    makeMeFabulous: null,
+    details: "Choose calming or educational content. Avoid stimulating or anxiety-inducing topics close to bedtime."
+  },
+  // === PRODUCTIVITY ===
+  {
+    name: "Write My To-Do List",
+    emoji: "\u{1F4DD}",
+    category: "Productivity",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "Writing a to-do list each morning externalizes tasks from working memory, reduces anxiety about forgetting things, and creates a clear action plan for the day.",
+    routines: ["Morning Routine"],
+    journeys: ["An Unexpected Journey", "Incredible Focus", "Higher Productivity"],
+    challenges: ["Log your Time Challenge"],
+    stackingPosition: "Position 4-5 — After physical habits (water, breakfast, exercise). Introduced around Day 12-14 as 'Plan Your Day.'",
+    behavioralScience: "The Zeigarnik Effect: unfinished tasks occupy mental bandwidth. Writing them down provides cognitive closure. Implementation Intentions: specifying exactly what you'll do reduces decision fatigue throughout the day.",
+    relatedHabits: ["Plan the Rest of My Day", "Prepare for Tomorrow", "Check My Emails"],
+    makeMeFabulous: "A Blistering Focus Session (2 hr Deep Work)",
+    details: "The fourth keystone habit in 'An Unexpected Journey.' Introduced as 'Plan Your Day & Celebrate' around Day 12-14. Keep the list to 3-5 priority items."
+  },
+  {
+    name: "Check My Emails",
+    emoji: "\u{1F4E7}",
+    category: "Productivity",
+    timeOfDay: ["afternoon"],
+    keystone: false,
+    summary: "Batching email checks to specific times (rather than constant monitoring) protects deep work time and reduces the reactive mode that fragments attention.",
+    routines: ["Afternoon Routine"],
+    journeys: ["Incredible Focus", "Higher Productivity"],
+    challenges: [],
+    stackingPosition: "Afternoon — after focused morning work blocks.",
+    behavioralScience: "Attention Management: constant email checking creates a reactive work mode. Batching emails applies the Deep Work principle of protecting cognitive resources. Scheduled checks reduce the variable reward pattern of inbox monitoring.",
+    relatedHabits: ["Write My To-Do List", "Plan the Rest of My Day", "Tidy My Workspace"],
+    makeMeFabulous: null,
+    details: "Check 2-3 times per day at set times rather than continuously. Turn off email notifications during focus blocks."
+  },
+  {
+    name: "Plan the Rest of My Day",
+    emoji: "\u{1F4CB}",
+    category: "Productivity",
+    timeOfDay: ["afternoon"],
+    keystone: false,
+    summary: "A midday planning reset reassesses priorities based on the morning's progress. Adjust the afternoon plan to focus on what matters most with remaining energy.",
+    routines: ["Afternoon Routine"],
+    journeys: ["Higher Productivity", "Self-Discipline Made Simple"],
+    challenges: ["Log your Time Challenge"],
+    stackingPosition: "Early afternoon — after lunch, before the afternoon work block.",
+    behavioralScience: "Implementation Intentions: re-specifying afternoon goals after lunch prevents the common 'afternoon drift' where productivity drops. Acts as a second activation energy point in the day.",
+    relatedHabits: ["Write My To-Do List", "Check My Emails", "Prepare for Tomorrow"],
+    makeMeFabulous: null,
+    details: "Take 5 minutes to review morning progress and set 2-3 afternoon priorities. Adjust based on energy levels."
+  },
+  {
+    name: "Prepare for Tomorrow",
+    emoji: "\u{1F4C5}",
+    category: "Productivity",
+    timeOfDay: ["evening"],
+    keystone: false,
+    summary: "Evening preparation reduces morning friction and decision fatigue. Reviewing tomorrow's calendar, setting out materials, and writing a brief plan creates a 'running start' for the next day.",
+    routines: ["Evening Routine"],
+    journeys: ["Higher Productivity", "A Fabulous Night"],
+    challenges: [],
+    stackingPosition: "Early evening — first productivity task in the evening routine.",
+    behavioralScience: "Reduces activation energy for the next morning. The Zeigarnik Effect works positively here: knowing tomorrow is planned allows the brain to 'close open loops' and relax. Environmental Design: setting out materials creates visual cues for morning behavior.",
+    relatedHabits: ["Write My To-Do List", "Prepare My Outfit for Tomorrow", "Set My Alarm"],
+    makeMeFabulous: null,
+    details: "Review calendar, set out workout clothes, prep breakfast ingredients. 5-10 minutes of evening prep saves 20+ minutes of morning friction."
+  },
+  {
+    name: "Prepare My Outfit for Tomorrow",
+    emoji: "\u{1F455}",
+    category: "Productivity",
+    timeOfDay: ["evening"],
+    keystone: false,
+    summary: "Choosing tomorrow's outfit the night before eliminates a morning decision point. Part of the broader 'reduce morning friction' strategy.",
+    routines: ["Evening Routine"],
+    journeys: ["A Fabulous Night"],
+    challenges: [],
+    stackingPosition: "Evening — pairs with Prepare for Tomorrow.",
+    behavioralScience: "Decision Fatigue reduction: eliminating even small decisions preserves willpower for important choices. Steve Jobs and Barack Obama famously used this strategy. Environmental Design: visible outfit serves as a morning cue.",
+    relatedHabits: ["Prepare for Tomorrow", "Tidy Up for 15 Minutes"],
+    makeMeFabulous: null,
+    details: "Lay out complete outfit including accessories. Consider weather and schedule when choosing."
+  },
+  {
+    name: "Set My Alarm",
+    emoji: "\u{23F0}",
+    category: "Productivity",
+    timeOfDay: ["evening"],
+    keystone: false,
+    summary: "Setting an alarm at a consistent time each night reinforces a stable sleep-wake schedule. The ritual marks the official start of the sleep wind-down.",
+    routines: ["Evening Routine"],
+    journeys: ["A Fabulous Night", "Better Sleep"],
+    challenges: [],
+    stackingPosition: "Late evening — one of the last tasks before sleep.",
+    behavioralScience: "Consistent wake times are the single most important factor in circadian rhythm regulation. Setting the alarm serves as a Commitment Device for the morning routine. The act itself signals to the brain that the day is ending.",
+    relatedHabits: ["Charge My Devices", "Disconnect from Technology"],
+    makeMeFabulous: null,
+    details: "Set for the same time every day (including weekends if possible). The consistency matters more than the specific time."
+  },
+  // === MINDFULNESS ===
+  {
+    name: "Meditate",
+    emoji: "\u{1F9D8}",
+    category: "Mindfulness",
+    timeOfDay: ["morning", "evening"],
+    keystone: false,
+    summary: "Meditation builds the skill of focused attention and emotional regulation. Fabulous starts with just 2 minutes and gradually increases, making it accessible to complete beginners.",
+    routines: ["Morning Routine", "Evening Routine"],
+    journeys: ["Meditation Practice", "Mindful Living", "A Fabulous Night", "Anxiety Arrival"],
+    challenges: [],
+    stackingPosition: "Morning: Position 4-5 (after physical habits). Evening: late, before sleep.",
+    behavioralScience: "Tiny Habits applied to meditation: starting at 2 minutes removes the intimidation barrier. Progressive Disclosure: duration increases only after consistency is established. Research shows even brief daily meditation changes brain structure within 8 weeks (Harvard/MGH study).",
+    relatedHabits: ["Journal", "Practice Gratitude", "Reflect on My Day"],
+    makeMeFabulous: "A Guided Meditation (5-15 min)",
+    details: "Appears in both morning and evening routines. The app offers guided meditation audio as part of its premium content. 'Make Me Fabulous' includes a guided meditation activity."
+  },
+  {
+    name: "Journal",
+    emoji: "\u{1F4D3}",
+    category: "Mindfulness",
+    timeOfDay: ["morning", "evening"],
+    keystone: false,
+    summary: "Journaling externalizes thoughts and emotions, creating clarity and self-awareness. Morning journaling sets intentions; evening journaling processes the day.",
+    routines: ["Morning Routine", "Evening Routine"],
+    journeys: ["Mindful Living", "Self-Love Journey", "Coping with Sadness"],
+    challenges: [],
+    stackingPosition: "Morning: after meditation. Evening: during wind-down.",
+    behavioralScience: "Expressive writing research (James Pennebaker): journaling about thoughts and feelings improves emotional processing and reduces stress. The act of writing creates cognitive distance from rumination. Morning pages (Julia Cameron) boost creativity and clarity.",
+    relatedHabits: ["Meditate", "Practice Gratitude", "Reflect on My Day"],
+    makeMeFabulous: "A Moment of Reflection (5 min)",
+    details: "The app provides structured journaling prompts and a built-in journal feature on the home screen. Both free-form and prompted formats are supported."
+  },
+  {
+    name: "Take a Mindful Break",
+    emoji: "\u{1F33A}",
+    category: "Mindfulness",
+    timeOfDay: ["afternoon"],
+    keystone: false,
+    summary: "A deliberate pause in the afternoon to step back from task-mode and reconnect with present-moment awareness. Even 2-5 minutes of mindful breathing resets the stress response.",
+    routines: ["Afternoon Routine"],
+    journeys: ["Mindful Living", "A Life Well-Balanced"],
+    challenges: [],
+    stackingPosition: "Mid-afternoon — between work blocks.",
+    behavioralScience: "Ultradian Rhythms: the brain naturally cycles between focused and diffuse modes every 90-120 minutes. A mindful break aligns with these natural cycles, preventing burnout and maintaining sustained performance.",
+    relatedHabits: ["Meditate", "Drink Tea", "Stretch"],
+    makeMeFabulous: "A Breathing Exercise (3-5 min)",
+    details: "2-5 minute break. Can be a breathing exercise, body scan, or simply sitting quietly with awareness. The app's 'Make Me Fabulous' includes guided breathing exercises."
+  },
+  {
+    name: "Practice Gratitude",
+    emoji: "\u{1F64F}",
+    category: "Mindfulness",
+    timeOfDay: ["afternoon"],
+    keystone: false,
+    summary: "Pausing to acknowledge what you're grateful for rewires the brain's negativity bias. Gratitude practice is one of the most researched positive psychology interventions.",
+    routines: ["Afternoon Routine"],
+    journeys: ["Self-Love Journey", "Mindful Living", "A Fabulous Night"],
+    challenges: ["Love Yourself Challenge"],
+    stackingPosition: "Afternoon — works as a midday reset, or can be part of the evening routine.",
+    behavioralScience: "Positive Psychology research (Martin Seligman, Robert Emmons): regular gratitude practice increases happiness by 25%, improves sleep quality, and strengthens immune function. Neuroplasticity: consistent practice literally rewires neural pathways toward positivity.",
+    relatedHabits: ["Journal", "Reflect on My Day", "Meditate"],
+    makeMeFabulous: null,
+    details: "Write 3 things you're grateful for. The app includes gratitude journaling prompts and reflections as micro-modules."
+  },
+  {
+    name: "Reflect on My Day",
+    emoji: "\u{1F31F}",
+    category: "Mindfulness",
+    timeOfDay: ["evening"],
+    keystone: false,
+    summary: "An evening reflection practice reviews what went well, what was challenging, and what can be improved. Creates a learning loop that compounds personal growth over time.",
+    routines: ["Evening Routine"],
+    journeys: ["Mindful Living", "Self-Love Journey", "The Art of Stoic Living"],
+    challenges: [],
+    stackingPosition: "Late evening — one of the last mindfulness activities before sleep.",
+    behavioralScience: "Metacognition: reflecting on behavior is how implicit learning becomes explicit knowledge. Stoic philosophy's 'evening review' (Seneca, Marcus Aurelius) is a 2000-year-old practice. Creates a Feedback Loop that improves decision-making over time.",
+    relatedHabits: ["Journal", "Practice Gratitude", "Meditate"],
+    makeMeFabulous: "A Moment of Reflection (5 min)",
+    details: "The app includes structured reflection prompts. Can be written (journal) or mental. Takes 5-10 minutes."
+  },
+  // === FITNESS ===
+  {
+    name: "Stretch",
+    emoji: "\u{1F938}",
+    category: "Fitness",
+    timeOfDay: ["afternoon", "evening"],
+    keystone: false,
+    summary: "Regular stretching improves flexibility, reduces muscle tension from sitting, and serves as a physical reset. Afternoon stretching combats the sedentary work pattern; evening stretching aids sleep.",
+    routines: ["Afternoon Routine", "Evening Routine"],
+    journeys: ["Exercising Regularly", "A Fabulous Night"],
+    challenges: ["7-Day Health Challenge"],
+    stackingPosition: "Afternoon: break activity. Evening: part of physical wind-down.",
+    behavioralScience: "Body-Mind connection: physical release triggers parasympathetic nervous system activation. In the afternoon, it breaks the sedentary pattern. In the evening, it transitions the body from alert to rest mode.",
+    relatedHabits: ["Exercise", "Go for a Walk", "Take a Warm Bath or Shower"],
+    makeMeFabulous: "A Full Body Stretch (10 min)",
+    details: "5-10 minutes. The app offers guided stretching as a 'Make Me Fabulous' activity (10-minute Full Body Stretch). Also available as an afternoon yoga session."
+  },
+  {
+    name: "Go for a Walk",
+    emoji: "\u{1F6B6}",
+    category: "Fitness",
+    timeOfDay: ["afternoon"],
+    keystone: false,
+    summary: "An afternoon walk provides light exercise, fresh air, and a change of scenery that boosts creative thinking. Walking meetings are increasingly recognized as productivity tools.",
+    routines: ["Afternoon Routine"],
+    journeys: ["Exercising Regularly", "A Life Well-Balanced"],
+    challenges: ["7-Day Health Challenge"],
+    stackingPosition: "Afternoon — break activity, pairs with Get Some Sun.",
+    behavioralScience: "Stanford research shows walking increases creative output by 60%. The combination of light exercise + nature exposure + rhythm creates an ideal state for diffuse thinking. Also provides the movement the body craves after sedentary morning work.",
+    relatedHabits: ["Exercise", "Get Some Sun", "Stretch"],
+    makeMeFabulous: "A Mindful Walk (15 min)",
+    details: "15-30 minutes. The 'Make Me Fabulous' section includes a 15-minute Mindful Walk guided activity."
+  },
+  // === SOCIAL ===
+  {
+    name: "Call a Friend or Family Member",
+    emoji: "\u{1F4DE}",
+    category: "Social",
+    timeOfDay: ["afternoon"],
+    keystone: false,
+    summary: "A brief social connection call maintains relationships and provides emotional nourishment. Human connection is one of the strongest predictors of well-being and longevity.",
+    routines: ["Afternoon Routine"],
+    journeys: ["A Life Well-Balanced", "Self-Love Journey"],
+    challenges: ["Love Yourself Challenge"],
+    stackingPosition: "Afternoon — flexible, works as a break activity.",
+    behavioralScience: "Harvard's 80-year Grant Study found that relationships are the #1 predictor of health and happiness. Even brief social connections trigger oxytocin release. Scheduling the call as a habit ensures relationships don't get neglected during busy periods.",
+    relatedHabits: ["Spend Quality Time with Family"],
+    makeMeFabulous: null,
+    details: "Even a 5-minute call makes a difference. The habit is about maintaining connection, not call duration."
+  },
+  {
+    name: "Spend Quality Time with Family",
+    emoji: "\u{1F46A}",
+    category: "Social",
+    timeOfDay: ["evening"],
+    keystone: false,
+    summary: "Dedicated, device-free family time in the evening strengthens bonds and models healthy relationship behavior. This is intentional connection time, not passive co-existing.",
+    routines: ["Evening Routine"],
+    journeys: ["A Life Well-Balanced"],
+    challenges: [],
+    stackingPosition: "Evening — after work tasks, before personal wind-down.",
+    behavioralScience: "Presence over quantity: research shows that the quality of attention during family time matters more than duration. Disconnecting from devices (Commitment Device) during this time creates genuine connection. Models healthy behavior for children.",
+    relatedHabits: ["Call a Friend or Family Member", "Disconnect from Technology"],
+    makeMeFabulous: null,
+    details: "30-60 minutes of device-free engagement. Can include shared meals, games, conversation, or activities."
+  },
+  // === PETS & HOME ===
+  {
+    name: "Walk the Dog",
+    emoji: "\u{1F415}",
+    category: "Pets & Home",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "Dog walking combines pet care with physical activity, outdoor exposure, and routine structure. Pets naturally create accountability for consistent habits.",
+    routines: ["Morning Routine"],
+    journeys: [],
+    challenges: [],
+    stackingPosition: "Morning — often one of the first activities, provides exercise + sunlight.",
+    behavioralScience: "External accountability: the dog creates a non-negotiable Cue that can't be snoozed. Combines multiple benefits (exercise, sunlight, fresh air) into a single habit. Pet ownership itself is linked to lower stress and better cardiovascular health.",
+    relatedHabits: ["Exercise", "Get Some Sun", "Feed the Pets"],
+    makeMeFabulous: null,
+    details: "Doubles as exercise and sunlight exposure. The dog provides built-in accountability — they don't accept excuses!"
+  },
+  {
+    name: "Feed the Pets",
+    emoji: "\u{1F431}",
+    category: "Pets & Home",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "Consistent pet feeding times support pet health and create a reliable morning routine anchor. Caring for another being builds responsibility and routine adherence.",
+    routines: ["Morning Routine"],
+    journeys: [],
+    challenges: [],
+    stackingPosition: "Early morning — one of the first activities.",
+    behavioralScience: "External accountability: pet needs create non-negotiable routine anchors. The caregiving act itself triggers oxytocin release. Consistent feeding times benefit both pet health and owner routine stability.",
+    relatedHabits: ["Walk the Dog", "Water the Plants"],
+    makeMeFabulous: null,
+    details: "Consistent timing supports pet digestive health and creates a reliable morning anchor."
+  },
+  {
+    name: "Water the Plants",
+    emoji: "\u{1FAB4}",
+    category: "Pets & Home",
+    timeOfDay: ["morning"],
+    keystone: false,
+    summary: "Plant care is a meditative, nurturing habit that connects you to living things and creates a visually pleasant environment. Watching plants grow provides a tangible marker of consistent care.",
+    routines: ["Morning Routine"],
+    journeys: [],
+    challenges: [],
+    stackingPosition: "Flexible morning — low-effort nurturing task.",
+    behavioralScience: "Biophilia hypothesis: humans have an innate connection to living things. Plant care provides visible feedback (growth) that reinforces the habit. The nurturing act supports well-being and creates a calming morning moment.",
+    relatedHabits: ["Feed the Pets", "Get Some Sun"],
+    makeMeFabulous: null,
+    details: "Quick check of indoor plants. Combine with your morning sunlight exposure by placing plants near windows."
+  }
+];
+
+// Category config
+const CATEGORIES = {
+  "Foundational": { emoji: "\u{1F48E}", color: "#E74C3C", bg: "#FDECEA" },
+  "Health": { emoji: "\u{1FA7A}", color: "#E91E63", bg: "#FCE4EC" },
+  "Organization": { emoji: "\u{1F4CB}", color: "#795548", bg: "#EFEBE9" },
+  "Nutrition": { emoji: "\u{1F966}", color: "#4CAF50", bg: "#E8F5E9" },
+  "Wellness": { emoji: "\u{2728}", color: "#FF9800", bg: "#FFF3E0" },
+  "Personal Growth": { emoji: "\u{1F4A1}", color: "#9C27B0", bg: "#F3E5F5" },
+  "Productivity": { emoji: "\u{26A1}", color: "#2196F3", bg: "#E3F2FD" },
+  "Mindfulness": { emoji: "\u{1F54A}\u{FE0F}", color: "#00BCD4", bg: "#E0F7FA" },
+  "Fitness": { emoji: "\u{1F4AA}", color: "#F44336", bg: "#FFEBEE" },
+  "Social": { emoji: "\u{1F91D}", color: "#673AB7", bg: "#EDE7F6" },
+  "Pets & Home": { emoji: "\u{1F3E1}", color: "#8BC34A", bg: "#F1F8E9" }
+};
+
+const CATEGORY_ORDER = [
+  "Foundational", "Health", "Nutrition", "Fitness", "Wellness",
+  "Mindfulness", "Productivity", "Personal Growth", "Organization",
+  "Social", "Pets & Home"
+];
+
+// State
+let activeTimeFilter = "all";
+let activeCategoryFilter = "all";
+let activeHabit = null;
+
+// Init
+function init() {
+  document.getElementById("total-count").textContent = HABITS.length;
+  document.getElementById("category-count").textContent = CATEGORY_ORDER.length;
+
+  // Populate category filter
+  const select = document.getElementById("category-filter");
+  CATEGORY_ORDER.forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat;
+    opt.textContent = `${CATEGORIES[cat].emoji} ${cat}`;
+    select.appendChild(opt);
+  });
+
+  // Wire filters
+  document.querySelectorAll(".filter-btn[data-time]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".filter-btn[data-time]").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeTimeFilter = btn.dataset.time;
+      render();
+    });
+  });
+
+  select.addEventListener("change", () => {
+    activeCategoryFilter = select.value;
+    render();
+  });
+
+  // Panel close
+  document.getElementById("panel-close").addEventListener("click", closePanel);
+  document.getElementById("panel-overlay").addEventListener("click", closePanel);
+
+  render();
+}
+
+function getFilteredHabits() {
+  return HABITS.filter(h => {
+    if (activeTimeFilter !== "all" && !h.timeOfDay.includes(activeTimeFilter)) return false;
+    if (activeCategoryFilter !== "all" && h.category !== activeCategoryFilter) return false;
+    return true;
+  });
+}
+
+function render() {
+  const filtered = getFilteredHabits();
+  const container = document.getElementById("habit-grid");
+  const empty = document.getElementById("empty-state");
+
+  if (filtered.length === 0) {
+    container.innerHTML = "";
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+
+  // Group by category
+  const grouped = {};
+  CATEGORY_ORDER.forEach(cat => { grouped[cat] = []; });
+  filtered.forEach(h => {
+    if (!grouped[h.category]) grouped[h.category] = [];
+    grouped[h.category].push(h);
+  });
+
+  let html = "";
+  CATEGORY_ORDER.forEach(cat => {
+    const habits = grouped[cat];
+    if (!habits || habits.length === 0) return;
+    const cfg = CATEGORIES[cat];
+
+    html += `<div class="category-section">
+      <div class="category-header">
+        <div class="category-icon" style="background:${cfg.bg};color:${cfg.color}">${cfg.emoji}</div>
+        <span class="category-name">${cat}</span>
+        <span class="category-count">${habits.length} habit${habits.length > 1 ? 's' : ''}</span>
+      </div>
+      <div class="habit-grid">`;
+
+    habits.forEach(h => {
+      const isActive = activeHabit && activeHabit.name === h.name;
+      const tags = h.timeOfDay.map(t => `<span class="habit-tag tag-${t}">${t.charAt(0).toUpperCase() + t.slice(1)}</span>`).join("");
+      const keystoneTag = h.keystone ? `<span class="habit-tag tag-keystone">Keystone</span>` : "";
+
+      html += `<div class="habit-card ${isActive ? 'active' : ''}" data-habit="${h.name}" onclick="openPanel('${h.name.replace(/'/g, "\\'")}')">
+        <div class="habit-emoji">${h.emoji}</div>
+        <div class="habit-name">${h.name}</div>
+        <div class="habit-tags">${tags}${keystoneTag}</div>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+function openPanel(habitName) {
+  const h = HABITS.find(x => x.name === habitName);
+  if (!h) return;
+  activeHabit = h;
+
+  const cfg = CATEGORIES[h.category];
+  const timeTags = h.timeOfDay.map(t => `<span class="panel-pill teal">${t.charAt(0).toUpperCase() + t.slice(1)}</span>`).join("");
+  const journeyPills = h.journeys.map(j => `<span class="panel-pill purple">${j}</span>`).join("");
+  const challengePills = h.challenges.map(c => `<span class="panel-pill amber">${c}</span>`).join("");
+  const relatedChips = h.relatedHabits.map(r => `<span class="panel-related-chip" onclick="openPanel('${r.replace(/'/g, "\\'")}')">${r}</span>`).join("");
+
+  let html = `
+    <div class="panel-hero" style="background: linear-gradient(135deg, ${cfg.color}, ${cfg.color}dd)">
+      <div class="panel-emoji">${h.emoji}</div>
+      <h2>${h.name}</h2>
+      <div class="panel-category">${cfg.emoji} ${h.category}${h.keystone ? ' \u00B7 Keystone Habit' : ''}</div>
+    </div>
+
+    <div class="panel-summary">${h.summary}</div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Component Outline</div>
+
+      <div class="panel-info-row">
+        <div class="panel-info-icon">\u{1F552}</div>
+        <div class="panel-info-text"><span class="panel-info-label">Time of Day:</span> ${timeTags}</div>
+      </div>
+
+      <div class="panel-info-row">
+        <div class="panel-info-icon">\u{1F3E0}</div>
+        <div class="panel-info-text"><span class="panel-info-label">Routines:</span> ${h.routines.join(", ")}</div>
+      </div>
+
+      <div class="panel-info-row">
+        <div class="panel-info-icon">\u{1F4CD}</div>
+        <div class="panel-info-text"><span class="panel-info-label">Stacking Position:</span> ${h.stackingPosition}</div>
+      </div>
+
+      ${h.journeys.length > 0 ? `<div class="panel-info-row">
+        <div class="panel-info-icon">\u{1F5FA}\u{FE0F}</div>
+        <div class="panel-info-text"><span class="panel-info-label">Journeys:</span><br><div class="panel-pill-row" style="margin-top:4px">${journeyPills}</div></div>
+      </div>` : ''}
+
+      ${h.challenges.length > 0 ? `<div class="panel-info-row">
+        <div class="panel-info-icon">\u{1F3AF}</div>
+        <div class="panel-info-text"><span class="panel-info-label">Challenges:</span><br><div class="panel-pill-row" style="margin-top:4px">${challengePills}</div></div>
+      </div>` : ''}
+
+      ${h.makeMeFabulous ? `<div class="panel-info-row">
+        <div class="panel-info-icon">\u{2728}</div>
+        <div class="panel-info-text"><span class="panel-info-label">Make Me Fabulous:</span> ${h.makeMeFabulous}</div>
+      </div>` : ''}
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Behavioral Science</div>
+      <p style="font-size:14px;color:#444;line-height:1.7">${h.behavioralScience}</p>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Details</div>
+      <p style="font-size:14px;color:#444;line-height:1.7">${h.details}</p>
+    </div>
+
+    ${h.relatedHabits.length > 0 ? `<div class="panel-section">
+      <div class="panel-section-title">Related Habits</div>
+      <div class="panel-related">${relatedChips}</div>
+    </div>` : ''}
+  `;
+
+  document.getElementById("panel-content").innerHTML = html;
+  document.getElementById("detail-panel").classList.add("open");
+  document.getElementById("panel-overlay").classList.add("visible");
+  document.getElementById("main").classList.add("panel-open");
+
+  // Scroll panel to top
+  document.getElementById("detail-panel").scrollTop = 0;
+
+  render(); // re-render to highlight active card
+}
+
+function closePanel() {
+  document.getElementById("detail-panel").classList.remove("open");
+  document.getElementById("panel-overlay").classList.remove("visible");
+  document.getElementById("main").classList.remove("panel-open");
+  activeHabit = null;
+  render();
+}
+
+// Keyboard support
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closePanel();
+});
+
+init();
+</script>
+</body>
+</html>

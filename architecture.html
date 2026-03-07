@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fabulous Ecosystem Architecture</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+    background: #0F1117; color: #D0D0D0; line-height: 1.5;
+    padding: 0; margin: 0;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #1ABC9C 0%, #0EBD8F 100%);
+    padding: 36px 40px 28px; color: white;
+  }
+  .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .header p { font-size: 15px; opacity: 0.85; }
+  .header-stats { display: flex; gap: 24px; margin-top: 16px; flex-wrap: wrap; }
+  .header-stat {
+    background: rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 16px;
+  }
+  .header-stat strong { font-size: 20px; display: block; }
+  .header-stat span { font-size: 11px; opacity: 0.8; }
+
+  .controls {
+    background: #151620; border-bottom: 1px solid #1E2030;
+    padding: 10px 40px; display: flex; gap: 8px; align-items: center;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .ctrl-btn {
+    background: #1E2030; border: 1px solid #2A2D3E; color: #AAA;
+    border-radius: 6px; padding: 5px 14px; font-size: 12px; cursor: pointer;
+    font-weight: 500; transition: all 0.15s;
+  }
+  .ctrl-btn:hover { background: #2A2D3E; color: #FFF; }
+
+  .content { padding: 24px 40px 60px; max-width: 1100px; margin: 0 auto; }
+
+  /* --- Table --- */
+  table { width: 100%; border-collapse: collapse; }
+
+  .row {
+    border-bottom: 1px solid #1A1C28;
+    transition: background 0.15s;
+  }
+  .row:hover { background: rgba(26,188,156,0.04); }
+
+  .row td { padding: 0; vertical-align: middle; }
+
+  .row-main {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; cursor: pointer; user-select: none;
+  }
+
+  .indent { flex-shrink: 0; }
+
+  .toggle {
+    width: 20px; height: 20px; border-radius: 5px; border: none;
+    background: #1E2030; color: #666; font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+  }
+  .toggle:hover { background: #2A2D3E; color: #1ABC9C; }
+  .toggle.expanded { color: #1ABC9C; transform: rotate(90deg); }
+  .toggle.hidden { visibility: hidden; }
+
+  .color-dot {
+    width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0;
+  }
+
+  .node-name {
+    font-size: 14px; font-weight: 600; color: #E0E0E0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .node-meta {
+    font-size: 12px; color: #666; margin-left: 8px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    flex-shrink: 1; min-width: 0;
+  }
+
+  .badge {
+    font-size: 9px; padding: 2px 7px; border-radius: 4px;
+    font-weight: 700; flex-shrink: 0; text-transform: uppercase;
+  }
+  .badge-keystone { background: #E74C3C; color: #FFF; }
+  .badge-free { background: #27AE60; color: #FFF; }
+  .badge-premium { background: #8E44AD; color: #FFF; }
+
+  .row-detail {
+    overflow: hidden; max-height: 0; opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease;
+    padding: 0 0 0 0;
+  }
+  .row-detail.open {
+    max-height: 500px; opacity: 1; padding: 0 0 12px 0;
+  }
+  .detail-content {
+    margin-left: 58px; padding: 10px 16px;
+    background: #151620; border-radius: 8px; border: 1px solid #1E2030;
+    font-size: 13px; color: #AAA; line-height: 1.6; max-width: 700px;
+  }
+
+  /* Depth-based styling */
+  .depth-0 .node-name { font-size: 16px; color: #1ABC9C; font-weight: 700; }
+  .depth-1 .node-name { font-size: 15px; color: #E0E0E0; }
+  .depth-2 .node-name { font-size: 14px; color: #CCC; }
+  .depth-3 .node-name { font-size: 13px; color: #BBB; }
+  .depth-4 .node-name { font-size: 13px; color: #AAA; }
+  .depth-5 .node-name { font-size: 12px; color: #999; }
+
+  /* Search */
+  .search-wrap {
+    flex: 1; max-width: 300px; position: relative;
+  }
+  .search-input {
+    width: 100%; background: #1E2030; border: 1px solid #2A2D3E;
+    border-radius: 6px; padding: 5px 12px 5px 30px; font-size: 12px;
+    color: #CCC; outline: none;
+  }
+  .search-input:focus { border-color: #1ABC9C; }
+  .search-icon {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: #555; font-size: 12px; pointer-events: none;
+  }
+
+  .highlight { background: rgba(26,188,156,0.25); border-radius: 2px; padding: 0 2px; }
+  .row.search-hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Fabulous Ecosystem Architecture</h1>
+  <p>Complete hierarchy of apps, journeys, routines, habits, challenges, and coaching</p>
+  <div class="header-stats">
+    <div class="header-stat"><strong>8</strong><span>Apps</span></div>
+    <div class="header-stat"><strong>25+</strong><span>Journeys</span></div>
+    <div class="header-stat"><strong>46</strong><span>Habits</span></div>
+    <div class="header-stat"><strong>12</strong><span>Challenges</span></div>
+    <div class="header-stat"><strong>10</strong><span>Activities</span></div>
+    <div class="header-stat"><strong>500+</strong><span>Letters</span></div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn" onclick="expandAll()">Expand All</button>
+  <button class="ctrl-btn" onclick="collapseAll()">Collapse All</button>
+  <button class="ctrl-btn" onclick="expandToDepth(2)">Show 2 Levels</button>
+  <button class="ctrl-btn" onclick="expandToDepth(3)">Show 3 Levels</button>
+  <div class="search-wrap">
+    <span class="search-icon">&#x1F50D;</span>
+    <input class="search-input" id="search" type="text" placeholder="Search habits, journeys, challenges...">
+  </div>
+</div>
+
+<div class="content">
+  <table><tbody id="tbody"></tbody></table>
+</div>
+
+<script>
+const TREE = {
+  n: "Fabulous Ecosystem", m: "8 apps \u00B7 37M+ users \u00B7 Duke University", c: "#1ABC9C",
+  t: "The complete Fabulous wellness app ecosystem, built on behavioral science from Duke University's Center for Advanced Hindsight. Includes 8 apps, 25+ journeys, 46 habits, and 500+ coaching letters.",
+  ch: [
+    {
+      n: "Fabulous App", m: "Core habit tracker & routine planner", c: "#1ABC9C",
+      t: "The flagship app. 4.6\u2605 iOS (75K reviews), 10M+ downloads, $39.99/yr premium. Google Material Design Award 2016.",
+      ch: [
+        {
+          n: "Three Mountains", m: "Progressive 3-phase journey structure", c: "#1ABC9C",
+          t: "Journeys organized into Foundation \u2192 Expansion \u2192 Mastery. Users progress sequentially through mountains.",
+          ch: [
+            {
+              n: "Mountain 1: The Foundation", m: "Core foundational habits", c: "#1ABC9C", badge: "free",
+              t: "Establishes core habits for a structured life. ALL users start here regardless of goals.",
+              ch: [
+                {
+                  n: "An Unexpected Journey", m: "~14 days \u00B7 Free \u00B7 Mandatory first journey", c: "#F39C12",
+                  t: "The mandatory starting journey. Introduces 4 keystone habits over ~14 days using habit stacking. Cannot be skipped. Rule: 1 new habit every 3-5 days.",
+                  ch: [
+                    {
+                      n: "Morning Routine", m: "4 keystone habits \u00B7 Habit stacking chain", c: "#E67E22",
+                      t: "The canonical morning ritual. Each habit uses the previous as its cue. Result: 4-5 habits \u2192 20-30 min routine.",
+                      ch: [
+                        { n: "\u{1F4A7} Drink Water", m: "Day 1-3 \u00B7 30 sec", c: "#E74C3C", badge: "keystone", t: "The very first habit. Trivially easy (30 sec) to maximize success. BJ Fogg's Tiny Habits: maximize Ability so Motivation doesn't need to be high. Tip: 'Use a glass or bottle you love.' Full-screen underwater art on habit screen." },
+                        { n: "\u{1F373} Eat a Great Breakfast", m: "Day 4-7", c: "#E74C3C", badge: "keystone", t: "Piggybacked on hydration cue via habit stacking (James Clear). Only unlocked after consistent water-drinking. Coaching letters explain the science of breakfast and energy." },
+                        { n: "\u{1F3CB}\u{FE0F} Exercise", m: "Day 8-11 \u00B7 5-10 min", c: "#E74C3C", badge: "keystone", t: "Starts at 5-10 min (Tiny Habits). Progressive Disclosure: only introduced after breakfast is established. Triggers endorphin reward. Various types: 7-min workouts, yoga, stretching." },
+                        { n: "\u{1F4DD} Plan Your Day & Celebrate", m: "Day 12-14", c: "#E74C3C", badge: "keystone", t: "Final keystone. Zeigarnik Effect: writing tasks provides cognitive closure. 'Celebrate' = self-affirmation mechanic unique to Fabulous." },
+                      ]
+                    },
+                    { n: "\u{1F4E8} Coaching Letters", m: "3-4 per journey \u00B7 Science + narrative + commitment", c: "#95A5A6", t: "Warm conversational letters: habit science lesson \u2192 motivational story \u2192 weekly commitment \u2192 habit introduction. 500+ total across all journeys." }
+                  ]
+                },
+                {
+                  n: "A Fabulous Morning", m: "Multi-week \u00B7 Energizing morning routine", c: "#F39C12",
+                  t: "Extends the morning routine beyond keystone habits. Introduces organizational and wellness habits.",
+                  ch: [
+                    { n: "\u{1F6CF}\u{FE0F} Make My Bed", m: "Organization", c: "#795548", t: "Keystone habit ripple effect. Admiral McRaven: 'accomplish the first task of the day.' Under 2 minutes." },
+                    { n: "\u{2600}\u{FE0F} Get Some Sun", m: "Wellness \u00B7 10-15 min", c: "#FF9800", t: "Resets circadian rhythm. Huberman: improves sleep 14-16 hours later. Natural energy booster replacing caffeine." },
+                    { n: "\u{1F48A} Take My Vitamins", m: "Health", c: "#E91E63", t: "Implementation Intentions: linking medication to breakfast dramatically improves compliance." },
+                    { n: "\u{1F4D6} Read", m: "Personal Growth \u00B7 10-15 min", c: "#9C27B0", t: "Identity-Based Habit: 'I am someone who reads.' 15 min/day = ~20 books/year. Peak morning cognition." },
+                  ]
+                },
+                {
+                  n: "A Fabulous Night", m: "~14 days \u00B7 Evening routine for sleep", c: "#F39C12",
+                  t: "Develops a relaxing evening routine for better sleep. Introduces wind-down habits one at a time.",
+                  ch: [
+                    { n: "\u{1F4F5} Disconnect from Technology", m: "30-60 min before bed", c: "#FF9800", t: "Blue light suppresses melatonin by up to 50%. Removing devices removes Cue for scrolling. Deep Work Room / App Block enforces digitally." },
+                    { n: "\u{1F4DA} Read a Book", m: "Personal Growth", c: "#9C27B0", t: "Sussex study: reading fiction reduces stress by 68%. Replaces screen habit via Habit Substitution." },
+                    { n: "\u{1F6BF} Warm Bath or Shower", m: "Wellness", c: "#FF9800", t: "Post-bath cooling mimics natural sleep-onset temperature drop. Reduces sleep onset by 10+ min. Transition ritual." },
+                    { n: "\u{1F9D8} Meditate", m: "Mindfulness \u00B7 Starts at 2 min", c: "#00BCD4", t: "Tiny Habits: starts at 2 min. Harvard/MGH: changes brain structure in 8 weeks. Duration increases after consistency." },
+                    { n: "\u{1F64F} Gratitude Journaling", m: "Mindfulness", c: "#00BCD4", t: "Positive Psychology (Seligman, Emmons): increases happiness 25%, improves sleep, strengthens immunity. Write 3 things." },
+                    { n: "\u{1F33F} Relaxing Tea", m: "Wellness", c: "#FF9800", t: "Chamomile: apigenin binds GABA receptors. The ritual signals wind-down. Caffeine-free only." },
+                    { n: "\u{23F0} Set My Alarm", m: "Productivity", c: "#2196F3", t: "Consistent wake time = #1 circadian regulation factor. Commitment Device for morning routine." },
+                  ]
+                }
+              ]
+            },
+            {
+              n: "Mountain 2: The Expansion", m: "Growth, health, and productivity", c: "#3498DB",
+              t: "Builds on the foundation with personal growth, health, and productivity journeys.",
+              ch: [
+                {
+                  n: "Incredible Focus", m: "Productivity \u00B7 Concentration & deep work", c: "#F39C12",
+                  t: "Improves concentration through Deep Work principles and environmental design.",
+                  ch: [
+                    { n: "\u{1F4DD} Write My To-Do List", m: "Productivity", c: "#2196F3", t: "Zeigarnik Effect: unfinished tasks occupy mental bandwidth. Writing provides cognitive closure. Keep to 3-5 priorities." },
+                    { n: "\u{1F5C2}\u{FE0F} Tidy My Workspace", m: "Organization", c: "#795548", t: "Environmental design for focus. Clears visual distractions for Deep Work. 2-5 min reset." },
+                    { n: "\u{1F9E0} Deep Work Blocks", m: "Focus timer \u00B7 Pomodoro-style", c: "#2196F3", t: "Pomodoro-style deep work sessions. App Block feature enforces focus by blocking distracting apps." },
+                  ]
+                },
+                {
+                  n: "Higher Productivity", m: "Advanced productivity techniques", c: "#F39C12",
+                  t: "Advanced techniques and habits for maximizing output and reducing friction.",
+                  ch: [
+                    { n: "\u{1F4CB} Plan the Rest of My Day", m: "Afternoon \u00B7 Midday reset", c: "#2196F3", t: "Prevents 'afternoon drift.' Second activation energy point. 5 min to set 2-3 afternoon priorities." },
+                    { n: "\u{1F4E7} Check My Emails", m: "Afternoon \u00B7 Batched 2-3x/day", c: "#2196F3", t: "Batching protects deep work time. Breaks variable reward pattern of constant inbox monitoring." },
+                    { n: "\u{1F4C5} Prepare for Tomorrow", m: "Evening", c: "#2196F3", t: "Closes open loops (Zeigarnik). 5-10 min of evening prep saves 20+ minutes of morning friction." },
+                    { n: "\u{1F4A4} Power Nap", m: "Afternoon \u00B7 10-20 min", c: "#FF9800", t: "NASA: 26-min nap improves performance 34%. Aligned with circadian dip (1-3 PM). Under 20 min avoids inertia." },
+                  ]
+                },
+                {
+                  n: "Exercising Regularly", m: "Fitness \u00B7 Consistent exercise habit", c: "#F39C12",
+                  t: "Builds a consistent and enjoyable exercise habit through gradual progression.",
+                  ch: [
+                    { n: "\u{1F3CB}\u{FE0F} Exercise", m: "Morning \u00B7 Foundation keystone", c: "#F44336", t: "Foundation keystone habit. Starts small at 5-10 min, builds up gradually." },
+                    { n: "\u{1F938} Stretch", m: "Afternoon + Evening", c: "#F44336", t: "Parasympathetic activation. Afternoon: breaks sedentary pattern. Evening: transitions to rest mode." },
+                    { n: "\u{1F6B6} Go for a Walk", m: "Afternoon \u00B7 15-30 min", c: "#F44336", t: "Stanford: walking increases creative output 60%. Exercise + nature + rhythm for diffuse thinking." },
+                  ]
+                },
+                {
+                  n: "Healthy Eating", m: "Nutrition \u00B7 Sustainable habits", c: "#F39C12",
+                  t: "Builds sustainable eating habits through planning and mindfulness.",
+                  ch: [
+                    { n: "\u{1F96A} Prepare a Healthy Lunch", m: "Morning prep", c: "#4CAF50", t: "Pre-deciding eliminates decision fatigue. Environmental Design: have healthy food ready." },
+                    { n: "\u{1F34E} Eat a Healthy Snack", m: "Afternoon \u00B7 3-4 PM", c: "#4CAF50", t: "Pre-commitment removes in-the-moment decisions. Maintains blood sugar for willpower." },
+                  ]
+                },
+                { n: "Self-Discipline Made Simple", m: "Productivity \u00B7 Focus & anti-procrastination", c: "#F39C12", t: "Builds mental and behavioral habits of self-discipline to reduce procrastination." },
+                { n: "Better Sleep", m: "Health & Wellness \u00B7 Evidence-based", c: "#F39C12", t: "Deep dive into sleep quality improvement through evidence-based habits." },
+                {
+                  n: "A Life Well-Balanced", m: "Mindset \u00B7 Work-life balance", c: "#F39C12",
+                  t: "Balance between work, life, and self-care. Includes digital wellness and social connection.",
+                  ch: [
+                    { n: "\u{1F4DE} Call a Friend or Family", m: "Social \u00B7 Afternoon", c: "#673AB7", t: "Harvard Grant Study (80 years): relationships = #1 predictor of health/happiness. Even 5-min calls trigger oxytocin." },
+                    { n: "\u{1F46A} Quality Family Time", m: "Social \u00B7 Evening", c: "#673AB7", t: "Device-free engagement. Presence > quantity. 30-60 min of genuine connection." },
+                    { n: "\u{1F3B5} Listen to Music", m: "Wellness \u00B7 Afternoon", c: "#FF9800", t: "Dopamine release. Familiar music reduces cortisol. 5-10 min intentional listening." },
+                    { n: "\u{1F375} Drink Tea", m: "Wellness \u00B7 Afternoon", c: "#FF9800", t: "Ritual transition cue. L-theanine: calm alertness without coffee jitters." },
+                  ]
+                },
+                { n: "Meditation Practice", m: "Mindfulness \u00B7 Deepen meditation", c: "#F39C12", t: "Introduces and deepens the practice of meditation for stress reduction and clarity." },
+                { n: "Weight Loss Journey", m: "Health & Fitness \u00B7 Sustainable", c: "#F39C12", t: "Sustainable weight loss through healthy habits, not crash diets." },
+              ]
+            },
+            {
+              n: "Mountain 3: The Mastery", m: "Purpose, relationships, self-actualization", c: "#9B59B6",
+              t: "Advanced topics: purpose, emotional mastery, relationships, and self-actualization.",
+              ch: [
+                {
+                  n: "The Art of Stoic Living", m: "Mindset \u00B7 Resilience & emotional control", c: "#F39C12",
+                  t: "Teaches Stoicism principles for resilience. Seneca's evening review, Marcus Aurelius reflections.",
+                  ch: [
+                    { n: "\u{1F31F} Reflect on My Day", m: "Evening \u00B7 Mindfulness", c: "#00BCD4", t: "Seneca's evening review (2000-year practice). Creates feedback loop improving decisions over time. 5-10 min." },
+                    { n: "\u{1F4D3} Journal", m: "Morning + Evening", c: "#00BCD4", t: "Pennebaker: expressive writing improves emotional processing, reduces stress. Morning pages + evening reflection." },
+                  ]
+                },
+                { n: "Becoming Fearless", m: "Emotional Health \u00B7 Overcome fears", c: "#F39C12", t: "Guides users in confronting and overcoming fears through gradual exposure." },
+                {
+                  n: "Self-Love Journey", m: "Emotional Health \u00B7 Self-compassion", c: "#F39C12",
+                  t: "Cultivates self-compassion and a positive self-image.",
+                  ch: [
+                    { n: "\u{1F64F} Practice Gratitude", m: "Mindfulness", c: "#00BCD4", t: "Rewires negativity bias. +25% happiness (Seligman). Neuroplasticity: rewires neural pathways toward positivity." },
+                  ]
+                },
+                { n: "Anxiety Arrival", m: "Emotional Health \u00B7 Manage anxiety", c: "#F39C12", t: "Tools and techniques for managing and reducing anxiety. Includes meditation and breathing." },
+                { n: "Building Self-Esteem", m: "Emotional Health \u00B7 Confidence", c: "#F39C12", t: "Build confidence and a stronger sense of self-worth." },
+                { n: "Coping with Sadness", m: "Emotional Health \u00B7 Depression support", c: "#F39C12", t: "Support and strategies for navigating periods of sadness and depression." },
+                {
+                  n: "Mindful Living", m: "Mindfulness \u00B7 Present-moment awareness", c: "#F39C12",
+                  t: "Brings more awareness and presence to daily life.",
+                  ch: [
+                    { n: "\u{1F9D8} Meditate", m: "Morning + Evening", c: "#00BCD4", t: "Harvard/MGH: 8 weeks of meditation changes brain structure. Starts at 2 min, gradually increases." },
+                    { n: "\u{1F33A} Take a Mindful Break", m: "Afternoon", c: "#00BCD4", t: "Ultradian rhythms: brain cycles 90-120 min. Mindful breaks align with natural focus cycles." },
+                  ]
+                },
+              ]
+            }
+          ]
+        },
+        {
+          n: "Challenges", m: "12 programs \u00B7 3-30 days \u00B7 Kickstart or reset", c: "#E67E22",
+          t: "Short focused programs that complement journeys. Available via 'Discover' tab. Run alongside current journey.",
+          ch: [
+            { n: "30-Day Clean Eating", m: "Nutrition", c: "#27AE60", t: "Month-long nutrition reset. Complements Healthy Eating journey." },
+            { n: "30-Day Life Well-Balanced", m: "Mindset & Digital Wellness", c: "#27AE60", t: "Balance and digital wellness challenge." },
+            { n: "14-Day Quit Sugar Addiction", m: "Nutrition & Self-Discipline", c: "#27AE60", t: "Break the sugar cycle in 2 weeks." },
+            { n: "22-Day Self-Discipline", m: "Productivity & Mindset", c: "#27AE60", t: "Build discipline habits over 22 days." },
+            { n: "30-Day Declutter", m: "Organization & Home", c: "#27AE60", t: "Systematic decluttering program." },
+            { n: "30-Day New Year, New You", m: "Personal Growth", c: "#27AE60", t: "Comprehensive new year reset." },
+            { n: "Love Yourself Challenge", m: "7 days \u00B7 Emotional Health", c: "#27AE60", t: "Week of self-compassion and self-care." },
+            { n: "Sugar Free Weekend", m: "3 days \u00B7 Nutrition", c: "#27AE60", t: "Quick sugar detox sprint." },
+            { n: "Log your Time", m: "7 days \u00B7 Productivity", c: "#27AE60", t: "Time awareness challenge." },
+            { n: "7-Day Health Challenge", m: "Fitness", c: "#27AE60", t: "Quick fitness kickstart." },
+            { n: "7-Day Low-Carb", m: "Nutrition", c: "#27AE60", t: "Low-carb eating sprint." },
+            { n: "7-Day 7-Minute Exercise", m: "Fitness", c: "#27AE60", t: "Daily 7-minute workouts for one week." },
+          ]
+        },
+        {
+          n: "Make Me Fabulous", m: "10 quick single activities", c: "#E67E22",
+          t: "One-tap guided activities for an instant boost. Available 24/7 in the coaching library. 2 min to 2 hours.",
+          ch: [
+            { n: "A Power Nap", m: "20 min \u00B7 Energy", c: "#8E44AD", t: "Guided power nap for energy restoration." },
+            { n: "A 7-Minute Workout", m: "7 min \u00B7 Fitness", c: "#8E44AD", t: "Quick full-body exercise routine." },
+            { n: "A Full Body Stretch", m: "10 min \u00B7 Fitness", c: "#8E44AD", t: "Guided stretching for flexibility and tension relief." },
+            { n: "A Guided Meditation", m: "5-15 min \u00B7 Mindfulness", c: "#8E44AD", t: "Audio-guided meditation session." },
+            { n: "An Afternoon Yoga Session", m: "15 min \u00B7 Fitness & Mindfulness", c: "#8E44AD", t: "Combines stretching with mindful breathing." },
+            { n: "A Moment of Reflection", m: "5 min \u00B7 Mindfulness", c: "#8E44AD", t: "Guided self-reflection and awareness." },
+            { n: "A Creative Escape", m: "15 min \u00B7 Personal Growth", c: "#8E44AD", t: "Structured creative expression time." },
+            { n: "A Blistering Focus Session", m: "2 hr \u00B7 Deep Work", c: "#8E44AD", t: "Extended deep work session with app blocking." },
+            { n: "A Mindful Walk", m: "15 min \u00B7 Mindfulness & Fitness", c: "#8E44AD", t: "Guided walking meditation outdoors." },
+            { n: "A Breathing Exercise", m: "3-5 min \u00B7 Mindfulness", c: "#8E44AD", t: "Guided breathing for stress reduction." },
+          ]
+        },
+        {
+          n: "Coaching System", m: "500+ letters \u00B7 11 audio series \u00B7 1:1 coaching", c: "#E67E22",
+          t: "Multi-faceted coaching: narrative letters, audio series, guided content, and certified live coaching.",
+          ch: [
+            { n: "500+ Coaching Letters", m: "Science + narrative + commitment", c: "#95A5A6", t: "Warm conversational letters: habit science \u2192 motivational story \u2192 weekly commitment \u2192 habit introduction. 3-4 per journey." },
+            { n: "11 Audio Coaching Series", m: "Anxiety, Self-Love, Productivity, Depression, Burnout...", c: "#95A5A6", t: "Short 2-min audio clips. Topics: Anxiety, Self-Love, Productivity, Depression, Burnout, Self-Care, Emotional Regulation, Grief, Habit-Building, Time Management, Relationships." },
+            { n: "1:1 Live Coaching", m: "Premium add-on \u00B7 Monthly 30-min video", c: "#95A5A6", t: "Certified Fabulous coaches. Monthly 30-min video sessions + unlimited email support." },
+            { n: "Guided Audio Content", m: "Sleep stories, meditations, breathwork, affirmations", c: "#95A5A6", t: "Premium library of sleep stories, guided meditations, breathwork sessions, and daily affirmations." },
+          ]
+        },
+        {
+          n: "Community: Circles", m: "Discussion boards \u00B7 Social accountability", c: "#E67E22",
+          t: "Discussion boards by topic. Social accountability + peer support. Available to all users.",
+          ch: [
+            { n: "Topic Circles", m: "Self-care, anxiety, self-love, motivation, productivity...", c: "#95A5A6", t: "Discussion boards by topic. Share stories, ask questions, celebrate achievements. Hundreds of members globally." },
+            { n: "Fabulous Circle Journey", m: "6-week program \u00B7 Build accountability group", c: "#95A5A6", t: "Step-by-step: set up group \u2192 recruit members \u2192 set weekly goals \u2192 build mutual accountability." },
+            { n: "A-Team", m: "Personal accountability partners", c: "#95A5A6", t: "'One of behavioral design's most powerful motivators.' Build a personal team of accountability partners." },
+          ]
+        },
+        {
+          n: "Additional Habits", m: "Home, pets, lifestyle, personal growth", c: "#E67E22",
+          t: "Supplementary habits beyond the core journeys. Can be added to any routine.",
+          ch: [
+            { n: "\u{1F415} Walk the Dog", m: "Morning \u00B7 Pets", c: "#8BC34A", t: "Non-negotiable cue from the dog. Combines exercise + sunlight + fresh air. Built-in accountability." },
+            { n: "\u{1F431} Feed the Pets", m: "Morning \u00B7 Pets", c: "#8BC34A", t: "Non-negotiable routine anchor. Caregiving triggers oxytocin release." },
+            { n: "\u{1FAB4} Water the Plants", m: "Morning \u00B7 Home", c: "#8BC34A", t: "Biophilia hypothesis: innate connection to living things. Visible growth = reinforcing feedback." },
+            { n: "\u{1F37D}\u{FE0F} Empty the Dishwasher", m: "Morning \u00B7 Home", c: "#8BC34A", t: "Small completions build momentum (Endowed Progress Effect)." },
+            { n: "\u{1F9FA} Do a Load of Laundry", m: "Morning \u00B7 Home", c: "#8BC34A", t: "Set-and-forget (2 min). Prevents weekend overwhelm through daily increments." },
+            { n: "\u{1F3A8} Creative Time", m: "Morning \u00B7 Personal Growth", c: "#8BC34A", t: "Peak cognition hours for generative thinking. Builds identity: 'I am creative.'" },
+            { n: "\u{1F3B9} Practice an Instrument", m: "Morning \u00B7 Personal Growth", c: "#8BC34A", t: "Deliberate Practice: consistency > duration. 15-20 min daily." },
+            { n: "\u{1F30D} Learn a Language", m: "Morning \u00B7 Personal Growth", c: "#8BC34A", t: "Spaced Repetition: daily exposure is most effective for language acquisition." },
+            { n: "\u{1F3A7} Listen to a Podcast", m: "Evening \u00B7 Personal Growth", c: "#8BC34A", t: "Screen-free learning. No blue light. Choose calming content near bedtime." },
+            { n: "\u{1F455} Prepare My Outfit", m: "Evening \u00B7 Productivity", c: "#8BC34A", t: "Decision fatigue reduction (Steve Jobs strategy). Lay out complete outfit." },
+            { n: "\u{1F50C} Charge My Devices", m: "Evening \u00B7 Organization", c: "#8BC34A", t: "Charging outside bedroom removes nighttime scrolling cue. Practical + digital wellness." },
+            { n: "\u{1F9F9} Tidy Up", m: "Morning \u00B7 Organization", c: "#8BC34A", t: "5-10 min. Reduces cognitive load. Visual cues for productive behavior." },
+            { n: "\u{1F3E0} Tidy Up for 15 Minutes", m: "Evening \u00B7 Organization", c: "#8BC34A", t: "Time-boxed to prevent perfectionism. Prepares environment for relaxation." },
+          ]
+        }
+      ]
+    },
+    {
+      n: "Shape", m: "Healthy Eating & Fitness \u00B7 Premium-only", c: "#2ECC71", badge: "premium",
+      t: "Focuses on building healthy eating habits and a positive relationship with exercise.",
+      ch: [
+        { n: "Untangle From Cravings", m: "Journey \u00B7 Nutrition", c: "#2ECC71", t: "Manage emotional eating and reduce cravings." },
+        { n: "Love of Movement", m: "Journey \u00B7 Fitness", c: "#2ECC71", t: "Encourage a positive relationship with physical activity." },
+        { n: "Trust Your Gut", m: "Journey \u00B7 Gut Health", c: "#2ECC71", t: "Improve gut health through mindful eating." },
+      ]
+    },
+    { n: "Lune", m: "Bedtime Sleep App", c: "#3498DB", t: "Tools and content to improve sleep quality and establish a relaxing bedtime routine." },
+    { n: "Lumiere", m: "Anxiety & Stress Aid \u00B7 ACT/CBT", c: "#9B59B6", t: "Evidence-based psychology (ACT, CBT) to help users manage anxiety and stress." },
+    { n: "Elixir", m: "Find Balance & Purpose \u00B7 Premium-only", c: "#E74C3C", badge: "premium", t: "Discover core values and align actions with a sense of purpose." },
+    { n: "Clarify", m: "ADHD Organizer & Help", c: "#F39C12", t: "Tools and coaching specifically designed for users with ADHD to improve focus and organization." },
+    { n: "Ambiance", m: "Ambient Sounds for Focus & Relaxation", c: "#1ABC9C", t: "Library of ambient sounds for focus and relaxation." },
+    { n: "Enchant", m: "Powerful Affirmations", c: "#E91E63", t: "Collection of positive affirmations to support a positive mindset." },
+  ]
+};
+
+// ============================================================
+// RENDER TABLE
+// ============================================================
+const tbody = document.getElementById('tbody');
+let allRows = [];
+
+function renderNode(node, depth, parentPath) {
+  const path = parentPath + '/' + node.n;
+  const hasChildren = node.ch && node.ch.length > 0;
+  const isLeaf = !hasChildren;
+  const startExpanded = depth < 2;
+
+  const tr = document.createElement('tr');
+  tr.className = `row depth-${Math.min(depth, 5)}`;
+  tr.dataset.path = path;
+  tr.dataset.depth = depth;
+  tr.dataset.name = node.n.toLowerCase();
+  tr.dataset.meta = (node.m || '').toLowerCase();
+  tr.dataset.text = (node.t || '').toLowerCase();
+
+  // Main cell
+  const td = document.createElement('td');
+  td.colSpan = 1;
+
+  const main = document.createElement('div');
+  main.className = 'row-main';
+
+  // Indent
+  const indent = document.createElement('span');
+  indent.className = 'indent';
+  indent.style.width = (depth * 24) + 'px';
+  main.appendChild(indent);
+
+  // Toggle
+  const toggle = document.createElement('button');
+  toggle.className = `toggle ${hasChildren ? (startExpanded ? 'expanded' : '') : 'hidden'}`;
+  toggle.innerHTML = '\u25B6';
+  toggle.onclick = (e) => { e.stopPropagation(); toggleRow(tr); };
+  main.appendChild(toggle);
+
+  // Color dot
+  const dot = document.createElement('span');
+  dot.className = 'color-dot';
+  dot.style.background = node.c;
+  main.appendChild(dot);
+
+  // Name
+  const name = document.createElement('span');
+  name.className = 'node-name';
+  name.textContent = node.n;
+  main.appendChild(name);
+
+  // Badge
+  if (node.badge) {
+    const badge = document.createElement('span');
+    badge.className = `badge badge-${node.badge}`;
+    badge.textContent = node.badge;
+    main.appendChild(badge);
+  }
+
+  // Meta
+  if (node.m) {
+    const meta = document.createElement('span');
+    meta.className = 'node-meta';
+    meta.textContent = node.m;
+    main.appendChild(meta);
+  }
+
+  td.appendChild(main);
+
+  // Detail row (tooltip content)
+  if (node.t) {
+    const detail = document.createElement('div');
+    detail.className = 'row-detail';
+    const content = document.createElement('div');
+    content.className = 'detail-content';
+    content.textContent = node.t;
+    content.style.marginLeft = ((depth * 24) + 34) + 'px';
+    detail.appendChild(content);
+    td.appendChild(detail);
+
+    main.addEventListener('click', () => {
+      const isOpen = detail.classList.contains('open');
+      // Close all other details
+      document.querySelectorAll('.row-detail.open').forEach(d => {
+        if (d !== detail) d.classList.remove('open');
+      });
+      detail.classList.toggle('open');
+    });
+  }
+
+  tr.appendChild(td);
+  tbody.appendChild(tr);
+
+  const rowData = { tr, node, depth, path, hasChildren, expanded: startExpanded };
+  allRows.push(rowData);
+
+  // Children
+  if (hasChildren) {
+    node.ch.forEach(child => renderNode(child, depth + 1, path));
+  }
+
+  return rowData;
+}
+
+renderNode(TREE, 0, '');
+
+// Initial visibility
+updateVisibility();
+
+function updateVisibility() {
+  const expandedPaths = new Set();
+  expandedPaths.add(''); // root always visible
+
+  allRows.forEach(r => {
+    if (r.expanded && r.hasChildren) {
+      expandedPaths.add(r.path);
+    }
+  });
+
+  allRows.forEach(r => {
+    const parentPath = r.path.substring(0, r.path.lastIndexOf('/'));
+    const visible = parentPath === '' || expandedPaths.has(parentPath);
+
+    // Check all ancestors
+    let anc = parentPath;
+    let allVisible = true;
+    while (anc.length > 0) {
+      const ancRow = allRows.find(x => x.path === anc);
+      if (ancRow && !ancRow.expanded) { allVisible = false; break; }
+      anc = anc.substring(0, anc.lastIndexOf('/'));
+    }
+
+    r.tr.style.display = (r.depth === 0 || allVisible) ? '' : 'none';
+  });
+}
+
+function toggleRow(tr) {
+  const row = allRows.find(r => r.tr === tr);
+  if (!row || !row.hasChildren) return;
+  row.expanded = !row.expanded;
+  const toggle = tr.querySelector('.toggle');
+  toggle.classList.toggle('expanded', row.expanded);
+  updateVisibility();
+}
+
+function expandAll() {
+  allRows.forEach(r => { if (r.hasChildren) r.expanded = true; });
+  document.querySelectorAll('.toggle:not(.hidden)').forEach(t => t.classList.add('expanded'));
+  updateVisibility();
+}
+
+function collapseAll() {
+  allRows.forEach(r => { if (r.hasChildren && r.depth > 0) r.expanded = false; });
+  document.querySelectorAll('.toggle:not(.hidden)').forEach(t => {
+    if (t.closest('.depth-0')) return;
+    t.classList.remove('expanded');
+  });
+  allRows[0].expanded = true;
+  updateVisibility();
+}
+
+function expandToDepth(d) {
+  allRows.forEach(r => {
+    if (r.hasChildren) r.expanded = r.depth < d;
+  });
+  document.querySelectorAll('.toggle:not(.hidden)').forEach(t => {
+    const row = allRows.find(r => r.tr === t.closest('.row'));
+    t.classList.toggle('expanded', row && row.expanded);
+  });
+  updateVisibility();
+}
+
+// ============================================================
+// SEARCH
+// ============================================================
+const searchInput = document.getElementById('search');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.toLowerCase().trim();
+
+  if (!q) {
+    // Reset
+    allRows.forEach(r => {
+      r.tr.classList.remove('search-hidden');
+      r.tr.querySelector('.node-name').innerHTML = r.node.n;
+    });
+    updateVisibility();
+    return;
+  }
+
+  // Find matching rows
+  const matchSet = new Set();
+  allRows.forEach(r => {
+    if (r.tr.dataset.name.includes(q) || r.tr.dataset.meta.includes(q) || r.tr.dataset.text.includes(q)) {
+      matchSet.add(r.path);
+      // Add all ancestors
+      let anc = r.path;
+      while (anc.length > 0) {
+        matchSet.add(anc);
+        anc = anc.substring(0, anc.lastIndexOf('/'));
+      }
+    }
+  });
+
+  allRows.forEach(r => {
+    const isMatch = matchSet.has(r.path);
+    r.tr.style.display = isMatch ? '' : 'none';
+    r.tr.classList.toggle('search-hidden', !isMatch);
+
+    // Expand parents of matches
+    if (isMatch && r.hasChildren) {
+      r.expanded = true;
+      const toggle = r.tr.querySelector('.toggle');
+      if (toggle) toggle.classList.add('expanded');
+    }
+
+    // Highlight matching text in name
+    const nameEl = r.tr.querySelector('.node-name');
+    const original = r.node.n;
+    if (original.toLowerCase().includes(q)) {
+      const idx = original.toLowerCase().indexOf(q);
+      nameEl.innerHTML = original.slice(0, idx) + '<span class="highlight">' + original.slice(idx, idx + q.length) + '</span>' + original.slice(idx + q.length);
+    } else {
+      nameEl.innerHTML = original;
+    }
+  });
+});
+
+// Keyboard: Escape clears search
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    searchInput.value = '';
+    searchInput.dispatchEvent(new Event('input'));
+  }
+});
+</script>
+</body>
+</html>
