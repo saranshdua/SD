@@ -153,6 +153,7 @@ body {
   border-left: 4px solid var(--coral);
   padding: 1.25rem;
   margin-bottom: 1.5rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
 .error-body { color: #c0392b; }
 
@@ -214,7 +215,7 @@ body {
   border-left: 4px solid var(--teal);
   padding: 1rem;
   cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition: background 0.15s, box-shadow 0.15s, border-color 0.15s;
   box-shadow: 0 1px 6px rgba(0,0,0,0.05);
 }
 
@@ -224,8 +225,9 @@ body {
 }
 
 .cat-card.active {
-  background: var(--teal-light);
+  background: rgba(26,188,156,0.13);
   border-left-color: var(--teal-dark);
+  box-shadow: 0 2px 12px rgba(26,188,156,0.18);
 }
 
 .cat-header {
@@ -256,10 +258,12 @@ body {
   margin-top: 0.75rem;
   padding-top: 0.75rem;
   border-top: 1px solid var(--border);
-  animation: fadeIn 0.2s ease;
 }
 
-.suggestions.open { display: flex; }
+.suggestions.open {
+  display: flex;
+  animation: fadeIn 0.2s ease;
+}
 
 .chip {
   display: inline-block;
