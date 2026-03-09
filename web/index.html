@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fabulous Research — Ask anything</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <h1>Fabulous Research</h1>
+    <p class="tagline">Ask any question about the architecture and content.</p>
+  </header>
+
+  <main class="content">
+
+    <!-- Ask box -->
+    <div class="ask-card">
+      <form id="ask-form">
+        <label for="question" class="sr-only">Your question</label>
+        <textarea
+          id="question"
+          name="question"
+          rows="3"
+          placeholder="e.g. How does the commitment contract work? What journeys exist?"
+          required
+        ></textarea>
+        <button type="submit" id="submit-btn" class="ask-btn">Ask</button>
+      </form>
+      <p class="powered-by">✨ Powered by AI · Answers based on research docs only</p>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading" hidden>
+      <div class="loading-dots">
+        <span></span><span></span><span></span>
+      </div>
+      Getting an answer…
+    </div>
+
+    <!-- Answer -->
+    <div class="answer-wrap" id="answer-wrap" hidden>
+      <div class="answer-label">Answer</div>
+      <div class="answer-body" id="answer-body"></div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-wrap" id="error-wrap" hidden>
+      <div class="error-body" id="error-body"></div>
+    </div>
+
+    <!-- Categories -->
+    <section class="category-section">
+      <h2>Browse by topic</h2>
+      <div class="category-grid" id="category-grid">
+        <!-- injected by app.js -->
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>Answers are grounded in the research docs only. No API key needed in the browser.</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
